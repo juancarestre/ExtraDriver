@@ -36,15 +36,46 @@ class attachMate(object):
         self.Screen=None
 
     def getActiveSession(self,**kwargs):
+        '''
+        Description:
+
+            return the active session
+
+        '''
         self.ActiveSession=self.system.ActiveSession
         return self.ActiveSession
         def Screen(self,**kwargs):
+            '''
+            Description:
+
+            return the screen of the active session
+
+            '''
+        
             return self.ActiveSession.Screen
 
     def Open(self,sessionPath,**kwargs):
-        getattr(self.system.Sessions,kwargs['funcName'])(sessionPath)
 
-    def OpenExtraSession(self,sessionPath,timeout=10,**kwargs):
+        '''
+        Description:
+
+            Open the session
+
+        '''
+        sess=getattr(self.system.Sessions,kwargs['funcName'])(session)
+        sess.Visible=True
+
+    def OpenExtraSession(self,sessionPath,timeout=6,**kwargs):
+        '''
+        Description:
+
+            Open the session in the "sessionPath", has a timeout default 6 seconds to wait that the session is already open
+
+        Ex:
+
+            session=attachMate().OpenExtraSession('../as400-demostracion.edp')
+
+        '''
         from os import system
         if '/' in sessionPath: sessionSplitedPath=sessionPath.split('/')
         elif '\\' in sessionPath: sessionSplitedPath=sessionSplitedPath.split('\\')
@@ -53,6 +84,8 @@ class attachMate(object):
         import time
         p = Popen(sessionSplitedPath[-1], shell=True,cwd=sessionPathURL)
         time.sleep(timeout)
+        self.ActiveSession=self.system.ActiveSession
+        return self.ActiveSession
 
     def Quit(self,**kwargs):
         '''
@@ -690,14 +723,37 @@ class extradriver(object):
         getattr(self.sessionDriver ,kwargs['funcName'])(String)
 
     def writeOn(self,ExtraObject,text,**kwargs):
+
+        '''
+        Description:
+
+            Put the text on the next editable field at the right of the ExtraObject described
+
+        Ex:
+
+            xdriver.writeOn('User . . . ',Username)
+
+        '''
+
         objectCords=self.Search(ExtraObject)
         self.SelectExtraObject(objectCords)
         col=objectCords['Right']
         row=objectCords['Top']
         editablerow,editablecolumn=self.searchNextEditableFields(row,col)
         self.PutString(text,editablerow,editablecolumn)
+        self.CopyAll()
 
     def searchNextEditableFields(self,startrow,startcol,**kwargs):
+        '''
+        Description:
+
+            Search and return the cords of the next editable fields at the right of the coord indicated (startrow,startcol)
+
+        Ex:
+
+            editablerow,editablecolumn=xdriver.searchNextEditableFields(row,col)
+
+        '''
         for i in range(startcol,80):
             if self.FieldAttribute(startrow,i)==192:
                 finalrow=startrow
@@ -706,8 +762,68 @@ class extradriver(object):
         return 1,1
 
     def GoToNextScreen(self,**kwargs):
+        '''
+        Description:
+        
+            Sendkey <Enter> and waits for the next screen until is ready
+
+        '''
         self.SendKeys('<Enter>')
         while(self.screenDriver.Updated): time.sleep(0.2)
+
+    def CopyAll(self,**kwargs):
+        '''
+        Description:
+
+            Copy the session Screen to the clipboard
+
+        '''
+        self.CopyAppend(1,1,24,80)
+
+    def CloseAll(self,**kwargs):
+        '''
+        Description:
+
+            Close all sessions and the As/400 client
+
+        '''
+
+
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        c = root.clipboard_get()
+        with open('report.txt', 'w') as f:
+            f.write(c)
+        self.CloseEx(1)
+
+if __name__=='__mai2n__':
+
+    screenLoggin = {
+        'User':' User  . . . . . . ',
+        'Password':'Password  . . . . . . . .',
+        'Program':'Program/procedure . . . . ',
+        'Menu':'Menu',
+        'Current':'Current library'
+    } 
+
+    As400MainMenu = {
+        'Command':'==>',
+        }
+
+    Emulator=attachMate()
+    Emulator.OpenExtraSession('./as400-demostracion.edp')
+    session=attachMate().getActiveSession()
+    xdriver=extradriver(session)
+    xdriver.writeOn(screenLoggin['User'],'CCJUAN')
+    xdriver.writeOn(screenLoggin['Password'],'DEMO5250')
+    xdriver.writeOn(screenLoggin['Program'],'Xprogram') 
+    xdriver.writeOn(screenLoggin['Menu'],'inventado')
+    xdriver.writeOn(screenLoggin['Current'],'actual')
+    xdriver.GoToNextScreen()
+    xdriver.writeOn(As400MainMenu['Command'],'comando')
+    xdriver.CloseAll()
+
 
 if __name__=='__main__':
 
@@ -724,13 +840,4 @@ if __name__=='__main__':
         }
 
     Emulator=attachMate()
-    Emulator.OpenExtraSession('../as400-demostracion.edp')
-    session=attachMate().getActiveSession()
-    xdriver=extradriver(session)
-    xdriver.writeOn(screenLoggin['User'],'Juan')
-    xdriver.writeOn(screenLoggin['Password'],'DEMO5250')
-    xdriver.writeOn(screenLoggin['Program'],'no idea') 
-    xdriver.writeOn(screenLoggin['Menu'],'inventado')
-    xdriver.writeOn(screenLoggin['Current'],'actual')
-    xdriver.GoToNextScreen()
-    xdriver.writeOn(As400MainMenu['Command'],'comando')   
+    session=Emulator.Open('as400-demostracion.edp')
