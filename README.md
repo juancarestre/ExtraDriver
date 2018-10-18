@@ -1,6 +1,6 @@
 # ExtraDriver
 
-Manipulation using Python of the Extra.system COM object (Component Object Model) in order to simulate a Driver to automate As / 400 emulation systems in a similar way as would be done with the Selenium WebDriver, still under development.
+Python module that achieve the manipulation of the Extra.system COM object (Component Object Model) in order to simulate a Driver to automate As / 400 emulation systems in a similar way as would be done with the Selenium WebDriver, still under development.
 
 Ignore the rest of the README.md
 
